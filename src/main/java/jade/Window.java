@@ -2,11 +2,10 @@ package jade;
 
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
-import util.Time;
 
-import javax.crypto.spec.PSource;
-import java.util.Random;
+import java.awt.*;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.opengl.GL11C.*;
@@ -17,7 +16,8 @@ public class Window {
     int width, height;
     String title;
     private long glfwWindow;
-    private static Window window;
+    private static Window window = null;
+    private ImGUILayer imGUILayer;
 
     private boolean fadeToWhite;
 
@@ -27,13 +27,31 @@ public class Window {
     private static Scene currentScene;
 
     private Window() {
-        this.width = 960;
-        this.height = 540;
+        this.width = 1920;
+        //System.out.println(width);
+        this.height = 1190;
+        //System.out.println(height);
         this.title = "Mario";
         r = 1;
-        g = 0;
-        b = 0;
+        g = 1;
+        b = 1;
         a = 1;
+    }
+
+    public static int getWidth() {
+        return get().width;
+    }
+
+    public static int getHeight() {
+        return get().height;
+    }
+
+    public static void setWidth(int newWidth) {
+        get().width = newWidth;
+    }
+
+    public static void setHeight(int newHeight) {
+        get().height = newHeight;
     }
 
     public static void changeScene(int newScene) {
@@ -60,6 +78,10 @@ public class Window {
         }
 
         return Window.window;
+    }
+
+    public static Scene getScene() {
+        return get().currentScene;
     }
 
     public void run() {
@@ -91,7 +113,7 @@ public class Window {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
+        glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
         //Create the Window
         glfwWindow = glfwCreateWindow(this.width,this.height, this.title, NULL, NULL);
@@ -103,6 +125,10 @@ public class Window {
         glfwSetMouseButtonCallback(glfwWindow, MouseListener::mousButtonCallback);
         glfwSetScrollCallback(glfwWindow, MouseListener::mouseScrollCallback);
         glfwSetKeyCallback(glfwWindow, KeyListener::keyCallback);
+        glfwSetWindowSizeCallback(glfwWindow, (w, newWidth, newHeight) -> {
+            window.setWidth(newWidth);
+            window.setHeight(newHeight);
+        });
 
         //OpenGL context current
         glfwMakeContextCurrent(glfwWindow);
@@ -114,17 +140,24 @@ public class Window {
 
         GL.createCapabilities();
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        this.imGUILayer = new ImGUILayer(glfwWindow);
+        this.imGUILayer.initImGui();
+
         Window.changeScene(0);
     }
 
     public void loop() {
-        float beginTime = Time.getTime();
+        float beginTime = (float)glfwGetTime();
         float endTime;
         float dt = -1.0f;
+
 
         while (!glfwWindowShouldClose(glfwWindow)) {
             //Poll events
             glfwPollEvents();
+
 
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -133,9 +166,11 @@ public class Window {
                 currentScene.update(dt);
             }
 
+            this.imGUILayer.update(dt);
+
             glfwSwapBuffers(glfwWindow);
 
-            endTime = Time.getTime();
+            endTime = (float)glfwGetTime();
             dt = endTime - beginTime;
             beginTime = endTime;
         }

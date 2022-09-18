@@ -42,7 +42,7 @@ public class MouseListener {
         } else if (action == GLFW_RELEASE) {
             if (button < get().mouseButtonPressed.length) {
                 get().mouseButtonPressed[button] = false;
-                get() .isDragging = false;
+                get().isDragging = false;
             }
         }
     }
